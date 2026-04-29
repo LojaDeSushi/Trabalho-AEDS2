@@ -1,0 +1,28 @@
+1: Criar grafo, nós com peso, ultimo nó base
+    - entrada base da prof >>>>>>>FEITO<<<<<<<
+    - Função Cria nó, Cria grafo >>>>>>>FEITO<<<<<<<
+
+2: Printf grafo >>>>>>>FEITO<<<<<<<
+    - nó x -> (aresta, peso) >>>>>>>FEITO<<<<<<<
+
+3: Mostrar caminho entre os sensores >>>>>>>FEITO<<<<<<<
+    - Função Adjacência >>>>>>>FEITO<<<<<<<
+    - fazer caminho >>>>>>>FEITO<<<<<<<<  Com Dijkstra
+    
+4: Número médio de vizinhos por sensor, grau médio
+    - Função Calcula grau >>>>>>>FEITO<<<<<<<
+    - Função Calcula Média >>>>>>>FEITO<<<<<<< 
+
+5: Conectividade da rede {ver sensores isolados}
+    - Função Verifica isolados >>>>>>>FEITO<<<<<<<
+    - Função Contar arestas, Contar adjacência
+
+6: Detectar nós que podem desconectar parte da rede
+    - Função Remodela arestas
+    - Função Grau máx >>>>>>>FEITO<<<<<<<
+
+7: Coeficiente de agrupamento {ver a conectividade entre os vizinhos}
+    - Função Verifica >>>>>>>FEITO<<<<<<<   
+
+8: Remover nó {críticos} e calcular o grau médio
+    - Função Remove >>>>>>>FEITO<<<<<<<
