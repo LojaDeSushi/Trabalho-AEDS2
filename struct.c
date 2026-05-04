@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <math.h>
+#include <Windows.h>
 #include "struct.h"
 
-#define MAX 100
 
 node* CriaNo(int num){
     //Cria um node
@@ -27,20 +27,29 @@ grafo* CriaGrafo(int vertices){
 
 void Arestas(grafo* grafo, int a, int b){
     //Cria as arestas
-    if(a != b){ //se forem iguais iria duplicado
-        node* NovoNo = CriaNo(b);
-        NovoNo->adj = grafo->ListaAdj[a];
-        grafo->ListaAdj[a] = NovoNo;
+    node* NovoNo = CriaNo(b);
+    NovoNo->adj = grafo->ListaAdj[a];
+    grafo->ListaAdj[a] = NovoNo;
 
-        NovoNo = CriaNo(a);
-        NovoNo->adj = grafo->ListaAdj[b];
-        grafo->ListaAdj[b] = NovoNo;
-    }
+    NovoNo = CriaNo(a);
+    NovoNo->adj = grafo->ListaAdj[b];
+    grafo->ListaAdj[b] = NovoNo;
+    
+}
 
-    else{
-        node* NovoNo = CriaNo(b);
-        NovoNo->adj = grafo->ListaAdj[a];
-        grafo->ListaAdj[b] = NovoNo;
+void CriArestas(grafo* grafo, int** matrix, int arestas){
+    for(int i = 0; i < arestas; i++){
+        int a;
+        int b;
+        int peso;
+        scanf("%d", &a);
+        scanf("%d", &b);
+        scanf("%d", &peso);
+        
+        Arestas(grafo, a, b);
+        
+        matrix[a][b] = peso;
+        matrix[b][a] = peso;
     }
 }
 
@@ -90,7 +99,6 @@ int Adjacentes(grafo* grafo, int a, int b){
     node* temp = grafo->ListaAdj[a];
     while(temp){
         if(temp->vertice == b){
-        //o que fazer com o peso em PROCESSO
             return 1;
             break;
         }
@@ -116,6 +124,7 @@ void CaminhoDks(grafo* grafo, int a, int b, int** matrix){
         }
         caminho[i] = 0;
     }
+
     caminho[a] = 1;
     dist[a] = 0;
 
@@ -135,7 +144,7 @@ void CaminhoDks(grafo* grafo, int a, int b, int** matrix){
         }
 
         caminho[v] = 1;
-        for(i = 0; i < vertices; i++){
+        for(int i = 0; i < vertices; i++){
             if(!caminho[i] && matrix[v][i] > 0){
                 if(dist[v] + matrix[v][i] < dist[i]){
                     dist[i] = dist[v] + matrix[v][i]; 
@@ -197,14 +206,14 @@ void Isolado(grafo* grafo){
     int vertices = grafo->Nvertices;
     int isolado[MAX];
     int v = 0;
-    printf("\nOs nodes isolados: ");
     for(int i = 0; i < vertices; i++){
         if(CalculaGrau(grafo, i) == 0){
             isolado[v] = i;
-            printf("%d | ", isolado[i]);
+            printf(" %d |", isolado[i]);
         }
         v++;
     }
+    printf("\n");
 }
 
 int Max(grafo* grafo){
@@ -233,7 +242,7 @@ int Min(grafo* grafo){
     return min;
 }
 
-void DesconectArest(grafo* grafo){
+void DesconectArest(grafo* grafo){//MUDAR!!!!
     int vertices = grafo->Nvertices;
     if(Min(grafo) == 0){
         printf("O grafo ja ta desconectado pelos: ");
@@ -245,7 +254,118 @@ void DesconectArest(grafo* grafo){
     }
 }
 
-void Agrupa(grafo* grafo, int a, int** matrix){
+int contVisi = 0;
+int ordem[MAX];//ordem que os nodes sao descobertos
+int ancam[MAX];//atalhos para ancestral 
+bool visitado[MAX];
+bool articulado[MAX];
+int tempo = 0;
+void BuscArticula(grafo* grafo, int a, int pai){//pontos de articulação
+    contVisi++;
+    node* temp = grafo->ListaAdj[a];
+    int filhos = 0;
+    visitado[a] = true;
+    ordem[a] = ancam[a] = tempo++;
+    
+    while(temp){
+        int u = temp->vertice;
+        if(u == pai){//se o filho é o pai, vai pro proximo
+            temp->adj;
+        }
+        if(visitado[u]){
+            if(ordem[u] < ancam[a]){
+                ancam[a] = ordem[u];// se u já foi visitado ele é um atalho 
+            }
+        }
+        else{
+            filhos++;
+            BuscArticula(grafo, u, a);
+            if(ancam[u] < ancam[a]){
+                ancam[a] = ancam[u];//se o atalho do filho for menor muda
+            } 
+            if(pai != -1 && ancam[u] >= ordem[a]){//se o filho u não consegue voltar para algum ancestral
+                articulado[a] = true;
+            }
+        }
+        temp = temp->adj;
+    }
+
+    if(pai == -1 && filhos > 1){//se é a raiz e tem mais de dois filhos
+        articulado[a] = true;
+    }
+    return;
+}
+
+int Conexo(grafo* grafo, int conte){//possui caminho entre os nodes(usa contador no BuscArticula)
+    int conexo;
+    int vertices = grafo->Nvertices;
+    if(conte == vertices){
+        conexo = 1;
+    }
+    else{
+        conexo = 0;
+    }
+    return conexo;
+}
+
+int Completo(grafo* grafo){
+    int vertices = grafo->Nvertices;
+    int max = vertices-1;
+    int completo = 1;
+    for(int i = 0; i < vertices; i++){
+        if(CalculaGrau(grafo, i) != max){
+            completo = 0;
+            return completo;
+        }
+    }
+    return completo;
+}
+
+int* NodesCritcos(grafo* grafo){//cria vetor pra amarmazenar quem eh critico ou nao
+    int vertices = grafo->Nvertices;
+    int* criticos = malloc(sizeof(int)* vertices);
+    for(int i = 0; i < vertices; i++){
+        criticos[i] = 0;
+    }
+    return criticos;
+}
+
+void DesconectNode(grafo* grafo, int* criticos){//verifica as condicoes para definir a quantidade de nodes necessarios
+    BuscArticula(grafo, 0, -1);
+    if(Conexo(grafo, contVisi) == 1){
+        printf("O grafo eh conexo\n");
+        if(Completo(grafo) == 1){//ve se é completo
+            printf("O grafo eh completo, por isso precisa sobrar apenas 1 node\n");
+            return;
+        }
+        int minimo = 2;//se não for completo e conexo tem que ter no minimo 2 nodes pra desconectar ou ver se tem nodes articulados que torna 1
+        for(int i = 0; i < grafo->Nvertices; i++){
+            if(articulado[i]){
+                minimo = 1;
+                criticos[i] = 1;
+                printf("O node %d eh articulado\n", i);
+            }
+        }
+        printf("Minimo numero de nodes para desconectar eh %d\n", minimo);
+    }
+    
+    else{
+        printf("O grafo ja eh desconexo\n");
+    }
+    return ;
+}
+
+void PrintaCriticos(grafo* grafo, int* criticos){//mostrar os nodes criticos
+    int vertices = grafo->Nvertices;
+    printf("Os nodes criticos sao: ");
+    for(int i = 0; i < vertices; i++){
+        if(criticos[i] != 0){
+            printf("%d | ", i);
+        }
+    }
+}
+
+void Agrupa(grafo* grafo, int a, int** matrix){//coeficiente de agrupamento
     if(CalculaGrau(grafo, a) == 0){
         printf("\nO %d nao possui adjacentes\n", a);
         return;
@@ -281,8 +401,9 @@ void Agrupa(grafo* grafo, int a, int** matrix){
     printf("o CC de %d eh %.2f\n", a, cc);
 }
 
-void Mata(grafo* grafo, int a, int** matrix){
+void Mata(grafo* grafo, int a, int** matrix, int* criticos){
     int vertices = grafo->Nvertices;
+    if(criticos[a] == 1) criticos[a] = 0;
     if(a > grafo->Nvertices || a < 0 || !grafo){
         printf("node invalido!\n");
         return;
@@ -367,25 +488,95 @@ void Mata(grafo* grafo, int a, int** matrix){
 
 
     printf("\nO node %d foi removido\n", a);
-    Recalcular(grafo, matrix);
+    Recalcular(grafo, matrix, criticos);
 
 }
 
-void Recalcular(grafo* grafo, int** matrix){
+void Recalcular(grafo* grafo, int** matrix, int* criticos){//escolha o que quer fazer depois de remover um node
     printf("\nDESEJA RECALCULAR TUDO PARA O NOVO GRAFO? 1 (sim) ou 2 (nao): \n");
     int resp = 0;
     scanf("%d", &resp);
     if(resp == 1){
-        PrintaMatrix(grafo, matrix);
-        PrintaGrafo(grafo, matrix);
-        CaminhoDks(grafo, 0, grafo->Nvertices - 1, matrix);
-        printf("\nGrau de %d: ", 4);
-        printf("%d\n", CalculaGrau(grafo, 4));
-        printf("Media de graus: %.2f\n", Media(grafo));
-        printf("O maior grau eh: %d\n", Max(grafo));
-        DesconectArest(grafo);
+        Pergunta(grafo, matrix, criticos);
     }
     else{
         printf("\nOk! :D\n");
     }
+}
+
+int Menu(){
+    int resp = 0;
+    printf("\n*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*");
+    printf("\nEscolhas:\n|1| printar a topografia e a matrix de pesos\n|2| printar caminho de todos ate a base\n");
+    printf("|3| escolher os nodes do caminho\n|4| o grau de um node e o grau medio\n|5| o coeficiente de agrupamento de um node\n");
+    printf("|6| desconexao da rede\n|7| nodes isolados\n|8| deletar node\n|9| nodes criticos\n|10| parar: \n");
+    scanf("%d", &resp);
+    return resp;
+}
+
+void Pergunta(grafo* grafo, int** matrix, int* criticos){//escolha do menu
+    int saida = 0;
+    do{
+        Sleep(2000);
+        int resp = Menu();
+        switch(resp){
+            case 1:
+                /*pesos
+                printf("\nMatrix de pesos:\n");
+                PrintaMatrix(grafo, matrix);
+                topografia grafo*/
+                PrintaGrafo(grafo, matrix);
+                break;
+            case 2:
+                for(int i = 0; i < grafo->Nvertices; i++){
+                    CaminhoDks(grafo, i, grafo->Nvertices - 1, matrix);
+                    printf("\n");
+                }
+                break;
+            case 3:
+                int node1;
+                int node2;
+                printf("Coloque o primeiro node: ");
+                scanf("%d", &node1);
+                printf("Coloque o segundo node: ");
+                scanf("%d", &node2);
+                CaminhoDks(grafo, node1, node2, matrix);
+                break;
+            case 4:
+                int node;
+                printf("Escolha o node: ");
+                scanf("%d", &node);
+                printf("Grau de %d: ", node);
+                printf("%d\n", CalculaGrau(grafo, node));
+                printf("Media de graus: %.2f\n", Media(grafo));
+                break;
+            case 5:
+                int node3;
+                printf("Escolha o node: ");
+                scanf("%d", &node3);
+                Agrupa(grafo, node3, matrix);
+                break;           
+            case 6:
+                DesconectArest(grafo);
+                DesconectNode(grafo, criticos);
+                break;
+            case 7:
+                printf("Os nodes isolados sao: ");
+                Isolado(grafo); 
+                break;
+            case 8:
+                int node4;
+                printf("Escolha o node para matar: ");
+                scanf("%d", &node4);
+                Mata(grafo, node4, matrix, criticos);
+                break;
+            case 9:
+                PrintaCriticos(grafo, criticos);
+                break;
+            case 10:
+                printf("Obrigada por usar :D");
+                saida = 1;
+                break;
+        }
+    } while(!saida);
 }
